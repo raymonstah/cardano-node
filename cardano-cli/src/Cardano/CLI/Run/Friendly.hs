@@ -116,29 +116,30 @@ friendlyTxOut (TxOut addr amount mdatum) =
               , "amount" .= friendlyTxOutValue amount
               ]
 
-    AddressInEra (ShelleyAddressInEra sbe) saddr@(ShelleyAddress net cred stake) ->
-      let preAlonzo :: [Aeson.Pair]
-          preAlonzo =
-            [ "address era" .= Aeson.String "Shelley"
-            , "network" .= net
-            , "payment credential" .= cred
-            , "stake reference" .= friendlyStakeReference stake
-            , "address" .= serialiseAddress saddr
-            , "amount" .= friendlyTxOutValue amount
-            ]
-          datum :: ShelleyBasedEra era -> [Aeson.Pair]
-          datum ShelleyBasedEraShelley = []
-          datum ShelleyBasedEraAllegra = []
-          datum ShelleyBasedEraMary = []
-          datum ShelleyBasedEraAlonzo = ["datum" .= renderDatum mdatum]
-      in object $ preAlonzo ++ datum sbe
-  where
-   renderDatum :: TxOutDatum CtxTx era -> Aeson.Value
-   renderDatum TxOutDatumNone = Aeson.Null
-   renderDatum (TxOutDatumHash _ h) =
-     Aeson.String $ serialiseToRawBytesHexText h
-   renderDatum (TxOutDatum _ sData) =
-     scriptDataToJson ScriptDataJsonDetailedSchema sData
+    AddressInEra
+      (ShelleyAddressInEra sbe)
+      saddr@(ShelleyAddress net cred stake) ->
+        object $ preAlonzo ++ datum
+     where
+      preAlonzo =
+        [ "address era" .= Aeson.String "Shelley"
+        , "network" .= net
+        , "payment credential" .= cred
+        , "stake reference" .= friendlyStakeReference stake
+        , "address" .= serialiseAddress saddr
+        , "amount" .= friendlyTxOutValue amount
+        ]
+      datum =
+        [ friendlyDatum mdatum
+        | isJust $ scriptDataSupportedInEra $ shelleyBasedToCardanoEra sbe
+        ]
+
+friendlyDatum :: TxOutDatum CtxTx era -> Aeson.Pair
+friendlyDatum TxOutDatumNone = "datum" .= Null
+friendlyDatum (TxOutDatumHash _ h) =
+  "datum hash" .= String (serialiseToRawBytesHexText h)
+friendlyDatum (TxOutDatum _ sData) =
+  "datum" .= scriptDataToJson ScriptDataJsonNoSchema sData
 
 
 friendlyStakeReference :: Crypto crypto => Shelley.StakeReference crypto -> Aeson.Value

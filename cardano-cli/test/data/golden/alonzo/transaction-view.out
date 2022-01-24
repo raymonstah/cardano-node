@@ -6,7 +6,26 @@ inputs:
 - ed7c8f68c194cc763ee65ad22ef0973e26481be058c65005fd39fb93f9c43a20#212
 metadata: null
 mint: null
-outputs: []
+outputs:
+- address: addr_test1vrwglspepcvyn7zaf6vst0ev5wlusry2j3qfavlw2y9alnggckeje
+  address era: Shelley
+  amount:
+    lovelace: 256
+  datum hash: 78752ade4be75bc291c8635495846591b6140be6544252d7874ad62e83ce838c
+  network: Testnet
+  payment credential:
+    key hash: dc8fc0390e1849f85d4e9905bf2ca3bfc80c8a94409eb3ee510bdfcd
+  stake reference: null
+- address: addr_test1vrwglspepcvyn7zaf6vst0ev5wlusry2j3qfavlw2y9alnggckeje
+  address era: Shelley
+  amount:
+    lovelace: 256
+  datum:
+    random name: Vincent Ford
+  network: Testnet
+  payment credential:
+    key hash: dc8fc0390e1849f85d4e9905bf2ca3bfc80c8a94409eb3ee510bdfcd
+  stake reference: null
 update proposal:
   epoch: 190
   updates:

@@ -248,9 +248,18 @@ golden_view_alonzo =
         execCardanoCLI
           [ "transaction", "build-raw"
           , "--alonzo-era"
-          , "--tx-in"
-          ,   "ed7c8f68c194cc763ee65ad22ef0973e26481be058c65005fd39fb93f9c43a20\
-              \#212"
+          , "--tx-in=\
+            \ed7c8f68c194cc763ee65ad22ef0973e26481be058c65005fd39fb93f9c43a20\
+            \#212"
+          , "--tx-out=\
+            \addr_test1vrwglspepcvyn7zaf6vst0ev5wlusry2j3qfavlw2y9alnggckeje\
+            \+256"
+          , "--tx-out-datum-hash=\
+            \78752ade4be75bc291c8635495846591b6140be6544252d7874ad62e83ce838c"
+          , "--tx-out=\
+            \addr_test1vrwglspepcvyn7zaf6vst0ev5wlusry2j3qfavlw2y9alnggckeje\
+            \+256"
+          , "--tx-out-datum-embed-value={\"random name\": \"Vincent Ford\"}"
           , "--fee", "213"
           , "--update-proposal-file", updateProposalFile
           , "--out-file", transactionBodyFile

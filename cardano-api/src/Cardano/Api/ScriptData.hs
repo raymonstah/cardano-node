@@ -383,11 +383,14 @@ scriptDataToJsonNoSchema = conv
 
 
     -- Script data allows any value as a key, not just string as JSON does.
-    -- For simple types we just convert them to string dirctly.
+    -- For simple types we just convert them to string directly.
     -- For structured keys we render them as JSON and use that as the string.
     convKey :: ScriptData -> Text
     convKey (ScriptDataNumber n) = Text.pack (show n)
-    convKey (ScriptDataBytes bs) = bytesPrefix
+    convKey (ScriptDataBytes bs)
+      | BSC.all (\c -> Char.isAscii c && Char.isPrint c) bs
+                                 = Text.decodeLatin1 bs
+      | otherwise                = bytesPrefix
                                 <> Text.decodeLatin1 (Base16.encode bs)
     convKey v                    = Text.Lazy.toStrict
                                  . Aeson.Text.encodeToLazyText
