@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -7,8 +8,11 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
+
+{-# OPTIONS_GHC -Wno-unticked-promoted-constructors #-}
 
 -- | Blocks in the blockchain
 --
@@ -17,7 +21,11 @@ module Cardano.Api.Block (
     -- * Blocks in the context of an era
     Block(.., Block),
     BlockHeader(..),
+    blockToAnyCardanoEra,
     getBlockHeader,
+    getBlockHeaderAndTxs,
+    getBlockIssuer,
+    previousBlockHeaderHash,
 
     -- ** Blocks in the context of a consensus mode
     BlockInMode(..),
@@ -54,6 +62,7 @@ import           Data.Aeson (FromJSON (..), ToJSON (..), object, (.=))
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Short as SBS
+import           Data.Coerce (coerce)
 import           Data.Foldable (Foldable (toList))
 
 import           Cardano.Slotting.Block (BlockNo)
@@ -62,6 +71,7 @@ import           Cardano.Slotting.Slot (EpochNo, SlotNo, WithOrigin (..))
 import qualified Cardano.Crypto.Hash.Class
 import qualified Cardano.Crypto.Hashing
 import qualified Ouroboros.Consensus.Block as Consensus
+import qualified Ouroboros.Consensus.Block as ConsensusBlock
 import qualified Ouroboros.Consensus.Byron.Ledger as Consensus
 import qualified Ouroboros.Consensus.Cardano.Block as Consensus
 import qualified Ouroboros.Consensus.Cardano.ByronHFC as Consensus
@@ -75,6 +85,8 @@ import qualified Cardano.Chain.Block as Byron
 import qualified Cardano.Chain.UTxO as Byron
 import qualified Cardano.Ledger.Block as Ledger
 import qualified Cardano.Ledger.Era as Ledger
+import qualified Cardano.Ledger.Serialization as Ledger
+import qualified Cardano.Ledger.Shelley.API as SL
 import qualified Cardano.Protocol.TPraos.BHeader as TPraos
 
 import           Cardano.Api.Eras
@@ -113,6 +125,62 @@ pattern Block header txs <- (getBlockHeaderAndTxs -> (header, txs))
 
 getBlockHeaderAndTxs :: Block era -> (BlockHeader, [Tx era])
 getBlockHeaderAndTxs block = (getBlockHeader block, getBlockTxs block)
+
+blockToAnyCardanoEra :: IsCardanoEra era => Block era -> AnyCardanoEra
+blockToAnyCardanoEra ByronBlock{} = AnyCardanoEra ByronEra
+blockToAnyCardanoEra (ShelleyBlock sbe _) = AnyCardanoEra $ shelleyBasedToCardanoEra sbe
+
+previousBlockHeaderHash :: forall era. Block era -> Maybe (Hash BlockHeader)
+previousBlockHeaderHash (ByronBlock blk) =
+  case ConsensusBlock.blockPrevHash blk of
+    ConsensusBlock.GenesisHash -> Nothing
+    ConsensusBlock.BlockHash headerHash ->
+      Just . HeaderHash
+        $ ConsensusBlock.toShortRawHash (Proxy @Consensus.ByronBlock) headerHash
+
+previousBlockHeaderHash b@(ShelleyBlock sbe _) =
+  obtainConsensusShelleyBasedEra sbe $ shelleyBlockPrevHash sbe b
+ where
+  shelleyBlockPrevHash
+    :: Consensus.ShelleyBasedEra (ShelleyLedgerEra era)
+    => ShelleyBasedEra era
+    -> Block era
+    -> Maybe (Hash BlockHeader)
+  shelleyBlockPrevHash _ (ShelleyBlock _ blk) =
+     case ConsensusBlock.blockPrevHash blk of
+      ConsensusBlock.GenesisHash -> Nothing
+      ConsensusBlock.BlockHash headerHash ->
+        Just . HeaderHash
+          $ ConsensusBlock.toShortRawHash
+              (Proxy @(Consensus.ShelleyBlock (ShelleyLedgerEra era)))
+              headerHash
+
+getBlockIssuer :: ShelleyBasedEra era -> Block era -> Hash StakePoolKey
+getBlockIssuer sbe' b = obtainBlockConstraints sbe' $ getBlockIssuer' sbe' b
+ where
+  getBlockIssuer'
+    :: Ledger.Era (ShelleyLedgerEra era)
+    => Ledger.Crypto (ShelleyLedgerEra era) ~ Consensus.StandardCrypto
+    => Ledger.ToCBORGroup (Ledger.TxSeq (ShelleyLedgerEra era))
+    => ShelleyBasedEra era -> Block era -> Hash StakePoolKey
+  getBlockIssuer' sbe (ShelleyBlock _ blk) =
+      let sBlockRaw = Consensus.shelleyBlockRaw blk
+          SL.Block bHeader _ = obtainBlockConstraints sbe sBlockRaw
+          TPraos.BHeader bhBody _ = bHeader
+          stakePoolKeyHash = TPraos.issuerIDfromBHBody bhBody
+      in StakePoolKeyHash . coerce $ stakePoolKeyHash
+
+  obtainBlockConstraints
+    :: ShelleyBasedEra era
+    -> (  Ledger.Era (ShelleyLedgerEra era)
+       => Ledger.Crypto (ShelleyLedgerEra era) ~ Consensus.StandardCrypto
+       => Ledger.ToCBORGroup (Ledger.TxSeq (ShelleyLedgerEra era))
+       => a)
+    -> a
+  obtainBlockConstraints ShelleyBasedEraShelley f = f
+  obtainBlockConstraints ShelleyBasedEraAllegra f = f
+  obtainBlockConstraints ShelleyBasedEraMary  f = f
+  obtainBlockConstraints ShelleyBasedEraAlonzo f = f
 
 -- The GADT in the ShelleyBlock case requires a custom instance
 instance Show (Block era) where

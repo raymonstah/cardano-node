@@ -138,9 +138,13 @@ module Cardano.Api (
     -- * Blocks
 
     -- ** Blocks in the context of an era
-    Block(Block),
+    Block(..),
+    blockToAnyCardanoEra,
     BlockHeader(..),
     getBlockHeader,
+    getBlockHeaderAndTxs,
+    getBlockIssuer,
+    previousBlockHeaderHash,
 
     -- ** Points on the chain
     ChainPoint(..),
