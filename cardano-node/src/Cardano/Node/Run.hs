@@ -105,6 +105,15 @@ runNode
   :: PartialNodeConfiguration
   -> IO ()
 runNode cmdPc = do
+    -- Workaround for GHC runtime. Ensures that resources in `bracket`s are
+    -- cleaned up on SIGTERM
+#ifdef UNIX
+    void $ Signals.installHandler
+      Signals.sigTERM
+      (Signals.CatchOnce $ Signals.raiseSignal Signals.sigINT)
+      Nothing
+#endif
+
     -- TODO: Remove sodiumInit: https://github.com/input-output-hk/cardano-base/issues/175
     Crypto.sodiumInit
 
