@@ -28,10 +28,10 @@ data Action where
   Delay              :: !Double -> Action
   ReadSigningKey     :: !KeyName -> !SigningKeyFile -> Action
   DefineSigningKey   :: !KeyName -> !TextEnvelope -> Action
-  AddFund            :: !TxIn -> !Lovelace -> !KeyName -> Action
-  ImportGenesisFund  :: !SubmitMode -> !KeyName -> !KeyName -> Action
-  CreateChange       :: !SubmitMode -> !PayMode -> !Lovelace -> !Int -> Action
-  RunBenchmark       :: !SubmitMode -> !SpendMode -> !ThreadName -> !NumberOfTxs -> !TPSRate -> Action
+  AddFund            :: !WalletName -> !TxIn -> !Lovelace -> !KeyName -> Action
+  ImportGenesisFund  :: !WalletName -> !SubmitMode -> !KeyName -> !KeyName -> Action
+  CreateChange       :: !WalletName -> !WalletName -> !SubmitMode -> !PayMode -> !Lovelace -> !Int -> Action
+  RunBenchmark       :: !WalletName -> !SubmitMode -> !SpendMode -> !ThreadName -> !NumberOfTxs -> !TPSRate -> Action
   WaitBenchmark      :: !ThreadName -> Action
   CancelBenchmark    :: !ThreadName -> Action
   Reserved           :: [String] -> Action

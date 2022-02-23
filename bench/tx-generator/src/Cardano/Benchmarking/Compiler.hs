@@ -18,7 +18,7 @@ import           Cardano.Api
 import           Cardano.Benchmarking.Types
 import           Cardano.Benchmarking.NixOptions
 import           Cardano.Benchmarking.Script.Setters
-import           Cardano.Benchmarking.Script.Store (Name(..))
+import           Cardano.Benchmarking.Script.Store (Name(..), globalWalletName)
 import           Cardano.Benchmarking.Script.Types
 
 data CompileError where
@@ -70,7 +70,7 @@ initConstants = do
 importGenesisFunds :: Compiler ()
 importGenesisFunds = do
   cmd1 (ReadSigningKey $ KeyName "pass-partout") _nix_sigKey
-  emit $ ImportGenesisFund LocalSocket (KeyName "pass-partout") (KeyName "pass-partout")
+  emit $ ImportGenesisFund globalWalletName LocalSocket (KeyName "pass-partout") (KeyName "pass-partout")
   delay
 
 initCollaterals :: Compiler ()
@@ -80,8 +80,8 @@ initCollaterals = do
     True -> do
       tx_fee <- askNixOption _nix_tx_fee
       safeCollateral <- _safeCollateral <$> evilFeeMagic
-      emit $ CreateChange LocalSocket (PayToAddr $ KeyName "pass-partout") (safeCollateral + tx_fee) 1
-      emit $ CreateChange LocalSocket (PayToCollateral $ KeyName "pass-partout") safeCollateral 1
+      emit $ CreateChange globalWalletName globalWalletName LocalSocket (PayToAddr $ KeyName "pass-partout") (safeCollateral + tx_fee) 1
+      emit $ CreateChange globalWalletName globalWalletName LocalSocket (PayToCollateral $ KeyName "pass-partout") safeCollateral 1
 
 splittingPhase :: Compiler ()
 splittingPhase = do
@@ -108,7 +108,7 @@ splittingPhase = do
   
   createChange :: Lovelace -> Int -> Compiler ()
   createChange value count = do
-     emit $ CreateChange LocalSocket (PayToAddr $ KeyName "pass-partout") value count
+     emit $ CreateChange globalWalletName globalWalletName LocalSocket (PayToAddr $ KeyName "pass-partout") value count
      delay
 
   createChangePlutus :: Lovelace -> Int -> Compiler ()
@@ -117,7 +117,7 @@ splittingPhase = do
      plutusTarget <- if autoMode
        then PayToScript <$> askNixOption _nix_plutusLoopScript <*> pure (ScriptDataNumber 0)
        else PayToScript <$> askNixOption _nix_plutusScript     <*> (ScriptDataNumber <$> askNixOption _nix_plutusData)
-     emit $ CreateChange LocalSocket plutusTarget value count
+     emit $ CreateChange globalWalletName globalWalletName LocalSocket plutusTarget value count
      delay
 
 benchmarkingPhase :: Compiler ()
@@ -140,7 +140,7 @@ benchmarkingPhase = do
                   <*> (ScriptDataNumber <$> askNixOption _nix_plutusData)
                   <*> (ScriptDataNumber <$> askNixOption _nix_plutusRedeemer)
     (False,False) ->  return SpendOutput
-  emit $ RunBenchmark target spendMode (ThreadName "tx-submit-benchmark") tx_count tps
+  emit $ RunBenchmark globalWalletName target spendMode (ThreadName "tx-submit-benchmark") tx_count tps
   unless debugMode $ do
     emit $ WaitBenchmark $ ThreadName "tx-submit-benchmark"
 
