@@ -47,7 +47,7 @@ let
 
   clusterCabal = workbench-supervisord { inherit profileName haskellPackages; useCabalRun = true; };
   clusterNix   = workbench-supervisord { inherit profileName haskellPackages; useCabalRun = false; };
-  workbench-smoke-test = clusterNix.smoke-test { profileName = "smoke-alzo"; };
+  workbench-smoke-test = clusterNix.profile-run-supervisord { profileName = "smoke-alzo"; };
 
   packages = {
     inherit haskellPackages shell
