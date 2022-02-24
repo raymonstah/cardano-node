@@ -144,6 +144,12 @@ module Cardano.Api (
     getBlockHeader,
     getBlockHeaderAndTxs,
     getBlockIssuer,
+    getBlockOpCertCounter,
+    getBlockOpCertKesHotKey,
+    getBlockProtocolVersion,
+    getBlockSize,
+    getBlockTxs,
+    getBlockVrfVerificationKey,
     previousBlockHeaderHash,
 
     -- ** Points on the chain
