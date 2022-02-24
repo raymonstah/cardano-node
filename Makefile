@@ -62,6 +62,9 @@ shell-dev cluster-shell-dev cluster-shell-trace cluster-shell-dev-trace fixed: s
 test-smoke: smoke ## Build the 'workbench-smoke-test', same as the Hydra job
 smoke:
 	nix build -f 'default.nix' 'workbench-smoke-test'
+test-analysis: smoke-analysis ## Build the 'workbench-smoke-analysis', same as the Hydra job
+smoke-analysis:
+	nix build -f 'default.nix' 'workbench-smoke-analysis'
 
 shell: ## Enter Nix shell, CI mode (workbench run from Nix store)
 	nix-shell --max-jobs 8 --cores 0 --show-trace --argstr profileName ${PROFILE} ${ARGS}

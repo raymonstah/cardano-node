@@ -62,7 +62,10 @@ case "$op" in
                  sort || true);;
 
     compute-path )
-        echo -n "$global_rundir/$1";;
+        if test -f "$1/meta.json"
+        then echo -n "$1"
+        else echo -n "$global_rundir/$1"
+        fi;;
 
     fix-legacy-run-structure | fix-legacy )
         local usage="USAGE: wb run $op TAG"
